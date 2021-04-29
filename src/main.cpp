@@ -33,7 +33,7 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // lighting
-glm::vec3 lightPos(1.2f, 3.0f, 2.0f);
+glm::vec3 lightPos(1.2f, 2.0f, 2.0f);
 
 int main()
 {
@@ -82,8 +82,8 @@ int main()
     Shader pyramidShader("resources/shaders/pyramid.vs", "resources/shaders/pyramid.fs");
     Shader lightCubeShader("resources/shaders/light_cube.vs", "resources/shaders/light_cube.fs");
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
+
+    // pyramid vertices
     float vertices[] = {
             // positions      normals    texture coords
             -0.5,-0.5,-0.5,  0,0.5,-1,      0,0,
@@ -128,7 +128,7 @@ int main()
     glEnableVertexAttribArray(2);
 
 
-    // configure the light's VAO,VBO and EBO
+    // configure the lightCube's VAO,VBO and EBO
     float lightCube_vertices[] = {
             // front
             -0.5f, -0.5f,  0.5f,
@@ -178,21 +178,43 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
     glBindVertexArray(0);
 
+    // plane
+    float planeVertices[] = {
+            // positions           // normals         // texture Coords
+            5.0f, -0.5f,  5.0f,     0.0f, 1.0f, 0.0f,   2.0f, 0.0f,
+            -5.0f, -0.5f,  5.0f,    0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+            -5.0f, -0.5f, -5.0f,    0.0f, 1.0f, 0.0f,   0.0f, 2.0f,
 
+            5.0f, -0.5f,  5.0f,     0.0f, 1.0f, 0.0f,   2.0f, 0.0f,
+            -5.0f, -0.5f, -5.0f,    0.0f, 1.0f, 0.0f,   0.0f, 2.0f,
+            5.0f, -0.5f, -5.0f,     0.0f, 1.0f, 0.0f,   2.0f, 2.0f
+    };
 
-    // load textures (we now use a utility function to keep the code more organized)
-    // -----------------------------------------------------------------------------
+    unsigned int planeVAO, planeVBO;
+    glGenVertexArrays(1, &planeVAO);
+    glGenBuffers(1, &planeVBO);
+    glBindVertexArray(planeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glBindVertexArray(0);
+
+    // load textures
+    unsigned int floorTexture = loadTexture(FileSystem::getPath("resources/textures/sand.jpg").c_str());
     unsigned int diffuseMap = loadTexture(FileSystem::getPath("resources/textures/brickwall.jpg").c_str());
     unsigned int specularMap = loadTexture(FileSystem::getPath("resources/textures/brickwall.jpg").c_str());
 
     // shader configuration
     // --------------------
     pyramidShader.use();
-    pyramidShader.setInt("material.diffuse", 0);
+    pyramidShader.setInt("material.diffuse", 1);
     pyramidShader.setInt("material.specular", 1);
 
 
@@ -212,20 +234,29 @@ int main()
 
         // render
         // ------
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.75f, 0.52f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //activate shader when setting uniforms/drawing objects
+
         pyramidShader.use();
         pyramidShader.setVec3("light.position", lightPos);
         pyramidShader.setVec3("viewPos", camera.Position);
 
-        //lightPos.x = 1.0f + sin(glfwGetTime()) * 2.0f;
-        //lightPos.y = sin(glfwGetTime() / 2.0f) * 1.0f;
 
-        // ligthpos in circle (room for tweeking)
-        lightPos.x = 3.0f * cos(glfwGetTime());
-        lightPos.z = 3.0f * sin(glfwGetTime());
+        pyramidShader.setVec3("dirLight.direction", -0.2f, 2.0f, -0.3f);
+        pyramidShader.setVec3("dirLight.ambient", 0.3f, 0.24f, 0.14f);
+        pyramidShader.setVec3("dirLight.diffuse", 0.7f, 0.42f, 0.26f);
+        pyramidShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        // point light 1
+        pyramidShader.setVec3("pointLight.position", lightPos);
+        pyramidShader.setVec3("pointLight.ambient", 1.0 * 0.1,  0.6 * 0.1,  0.0* 0.1);
+        pyramidShader.setVec3("pointLight.diffuse", glm::vec3(1.0f, 0.6f, 0.0f));
+        pyramidShader.setVec3("pointLight.specular",  glm::vec3(1.0f, 0.6f, 0.0f));
+        pyramidShader.setFloat("pointLight.constant", 1.0f);
+        pyramidShader.setFloat("pointLight.linear", 0.09);
+        pyramidShader.setFloat("pointLight.quadratic", 0.032);
+
 
         // light properties
         pyramidShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
@@ -243,6 +274,8 @@ int main()
 
         // world transformation
         glm::mat4 model = glm::mat4(1.0f);
+        model = glm::scale(model, glm::vec3(2.0f));
+        model = glm::translate(model,glm::vec3(0.0f,0.25f,0.0f));
         pyramidShader.setMat4("model", model);
 
         // bind diffuse map
@@ -251,13 +284,12 @@ int main()
         // bind specular map
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, specularMap);
-
         // render the pyramid
         glBindVertexArray(pyramidVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
-        // draw the lightCube object
+        // draw the lightCube
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
@@ -265,10 +297,22 @@ int main()
         model = glm::translate(model, lightPos);
         model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
         lightCubeShader.setMat4("model", model);
-
         glBindVertexArray(lightCubeVAO);
-        //glDrawArrays(GL_TRIANGLES, 0, 36);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+
+        // draw plane
+        pyramidShader.use();
+        glBindVertexArray(planeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, floorTexture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, floorTexture);
+        model = glm::mat4(1.0f);
+        pyramidShader.setMat4("model", model);
+        pyramidShader.setMat4("view",view);
+        pyramidShader.setMat4("projection",projection);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -280,6 +324,8 @@ int main()
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &pyramidVAO);
     glDeleteVertexArrays(1, &lightCubeVAO);
+    glDeleteVertexArrays(1, &planeVAO);
+    glDeleteBuffers(1, &planeVBO);
     glDeleteBuffers(1, &pyramidVBO);
     glDeleteBuffers(1, &lightCubeVBO);
     glDeleteBuffers(1, &lightCubeEBO);
