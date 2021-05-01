@@ -9,6 +9,7 @@
 #include <learnopengl/filesystem.h>
 #include <learnopengl/shader_m.h>
 #include <learnopengl/camera.h>
+#include <learnopengl/model.h>
 
 #include <iostream>
 
@@ -217,6 +218,8 @@ int main()
     pyramidShader.setInt("material.diffuse", 1);
     pyramidShader.setInt("material.specular", 1);
 
+    Model anubis(FileSystem::getPath("resources/objects/anubis/Anubis_baseMesh.OBJ"));
+
 
     // render loop
     // -----------
@@ -266,6 +269,10 @@ int main()
         // material properties
         pyramidShader.setFloat("material.shininess", 64.0f);
 
+
+        lightPos.x = 3.0f * cos(glfwGetTime());
+        lightPos.z = 3.0f * sin(glfwGetTime());
+
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
@@ -313,6 +320,21 @@ int main()
         pyramidShader.setMat4("view",view);
         pyramidShader.setMat4("projection",projection);
         glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+        //anubis
+
+        pyramidShader.setVec3("pointLight.ambient", 1.0 * 0.1,  0.6 * 0.1,  0.0* 0.1);
+        pyramidShader.setVec3("pointLight.diffuse", glm::vec3(1.0f, 0.0f, 0.0f));
+        pyramidShader.setVec3("pointLight.specular",  glm::vec3(1.0f, 0.0f, 1.0f));
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(4.0f, 2.25f, -4.0f));
+        model = glm::scale(model, glm::vec3(0.3));
+        model = glm::rotate(model,glm::radians(-45.0f),glm::vec3(0.0f,1.0f,0.0f));
+        pyramidShader.setMat4("model", model);
+        anubis.Draw(pyramidShader);
+
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
