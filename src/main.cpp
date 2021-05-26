@@ -243,7 +243,7 @@ int main()
 
 
         pyramidShader.use();
-        pyramidShader.setVec3("light.position", lightPos);
+        pyramidShader.setVec3("light.position", glm::vec3(1.2f, 2.0f, 2.0f));
         pyramidShader.setVec3("viewPos", camera.Position);
 
 
